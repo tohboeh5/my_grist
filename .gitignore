@@ -1,0 +1,4 @@
+.env
+kubefiles/postgres-secret.yaml
+kubefiles/secret.yaml
+postgres.env

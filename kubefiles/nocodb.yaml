@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nocodb-app
+  namespace: nocodb
+spec:
+  selector:
+    matchLabels:
+      app: nocodb-app
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: nocodb-app
+    spec:
+      containers:
+        - name: nocodb-app
+          image: nocodb/nocodb:latest
+          envFrom:
+            - secretRef:
+                name: nocodb-secret
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - mountPath: /usr/app/data
+              name: pvc-nocodb
+          resources: {}
+      volumes:
+        - name: pvc-nocodb
+          persistentVolumeClaim:
+            claimName: pvc-nocodb
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: nocodb-app
+  namespace: nocodb
+  labels:
+    app: nocodb-app
+spec:
+  ports:
+    - port: 80
+      targetPort: 8080
+  selector:
+    app: nocodb-app
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nocodb-app
+  namespace: nocodb
+spec:
+  ingressClassName: tailscale
+  tls:
+  - hosts:
+    - "nocodb"
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nocodb-app
+            port:
+              number: 80
